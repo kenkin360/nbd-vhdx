@@ -8,3 +8,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
 * install/uninstall: 
 
   Run `install-sh` or `uninstall-sh` along with `nbd-vhdx` and `nbd-vhdx.service` to install/uninstall the service and shell script executable. 
+  
+ * Run in command line: 
+
+  Run `nbd-vhdx` with no argument to see the supported commands. 

@@ -53,7 +53,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
 
   You might encounter a problem that after you modified the files in a BitLocker volume under Linux, the disk image cannot be mounted in Windows 10 anyomre. The error message says `Make sure the file is in an NTFS volume and isn't in a compressed folder or volume.` As far as we know by googling, it seems an issue (or a feature?) of Windows security update KB4019472. There are several ways to workaround this but if the disk image was huge, then run
   ```
-  fsutil sparse setFlag ***YOUR-DISK-IMAGE-FILENAME*** 0
+  fsutil sparse setFlag <YOUR-DISK-IMAGE-FILENAME> 0
   ```
   in the command prompt would be a reasonable and handy one. 
   

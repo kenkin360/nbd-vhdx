@@ -26,11 +26,11 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   4. If there are more BitLocker partitions in the same disk image, add each entry with the same filename. That said, the same filename can appear in multiple entries, and will be connected as only one NBD. 
 
   Here's an example: 
-```
-# <target name>	<source device>		<key file>	<options>
-- PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/bin/bitlocker-test.vhdx
-- PARTUUID=bace267f-01 /root/bace267f-01.fvek bitlk /media/bin/vhdx-test.vhdx
-- - - - /media/bin/bitlk-test.vhd
-- PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
-```
-  The third and forth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the forth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
+  ```
+  # <target name>	<source device>		<key file>	<options>
+  - PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/bin/bitlocker-test.vhdx
+  - PARTUUID=bace267f-01 /root/bace267f-01.fvek bitlk /media/bin/vhdx-test.vhdx
+  - - - - /media/bin/bitlk-test.vhd
+  - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
+  ```
+    The third and forth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the forth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 

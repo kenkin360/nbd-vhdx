@@ -34,3 +34,17 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
   ```
     The third and forth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the forth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
+
+* /etc/fstab
+
+    We would just describe partitions to mount on startup in `/etc/fstab` as usual. The following is for an example: 
+    
+    ```
+    UUID=xxxxxxxxxxxxxxxx /media/bin ntfs-3g defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+
+    UUID=01D98685D8342A50 /media/bitlocker-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+    UUID=01D98B4612C4F6D0 /media/vhdx-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+    UUID=01D98B437A03A830 /media/bitlk-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+    UUID=01D98B437CB35EE0 /media/bitlk-test2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+    ```
+    where the BitLocker partitions would be mapped in `/dev/mapper`. In the example described formerly, they would be `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01` and `/dev/mapper/bitlk-bace284a-01`. The forth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same that `bitlk-test` was in. 

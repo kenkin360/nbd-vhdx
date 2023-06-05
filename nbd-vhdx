@@ -1,0 +1,192 @@
+#!/bin/bash
+
+GetVhdxMap(){
+	while read -r pid; do
+		unset filename
+		unset device
+
+		for link in /proc/$pid/fd/*; do
+			if [ -n "$device" ] && [ -n "$filename" ]; then
+				list="$device $filename
+$list"
+				break
+			fi
+
+			case "$(file -b -L $link)" in 
+				"Microsoft Disk Image"*)
+					filename="$(readlink $link)"
+					;;
+
+				"block special"*)
+					device="$(readlink $link)"
+					;;
+
+			esac
+		done
+	done < <(ps -C qemu-nbd -o pid=)
+
+	echo "$list"|grep -v -e '^#' -e '^[[:space:]]*$'
+}
+
+FindDevice(){
+	while read -r device filename; do
+		if [ "$filename" = "$1" ]; then
+			echo "$device"
+			break
+		fi
+	done < <(GetVhdxMap)
+}
+
+TryConnect(){
+	for device in $(ls -v /dev/nbd*); do 
+		if [ -f $(echo "$device/partition"|sed 's|/dev/|/sys/class/block/|g') ] || [ -f $(echo "$device/pid"|sed 's|/dev/|/sys/class/block/|g') ]; then
+			# Skip partitions or unavailable
+			continue
+		elif qemu-nbd -c "$device" "$1"; then
+			echo "$device"
+			break
+		else
+			qemu-nbd -d "$device" &>/dev/null
+			break
+		fi
+	done
+}
+
+Disconnect(){
+	umount -q "$1"p*
+	rm "/dev/disk/by-id/nbd-$(blkid -s PTUUID -o value $1)" 2>/dev/null
+
+	if [ "service" = "$2" ]; then
+		echo skipped disconnecting
+	else
+		qemu-nbd -d "$1"
+	fi
+}
+
+DisconnectAll(){
+	for volume in "/dev/mapper/bitlk-"*; do
+		if [ "/dev/mapper/bitlk-*" = "$volume" ]; then
+			break
+		fi
+
+		umount -q "$volume"
+
+		if cryptsetup close "$volume" 2>/dev/null; then
+			echo "$volume closed"
+		fi
+	done
+
+	while read -r device filename; do
+		Disconnect "$device" "$1"
+	done < <(GetVhdxMap)
+}
+
+DumpVolumeKeys(){
+	filename="$1"
+	device="$(FindDevice $filename)"
+
+	if [ ! -n "$device" ]; then
+		device="$(TryConnect $filename)"
+		absent=true
+	fi
+
+	if [ ! -n "$device" ]; then
+		return
+	fi
+
+	echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filename is now connected to $device |g" &>/dev/null
+
+	blkid -t "TYPE=BitLocker" -o device|while read -r partition; do
+		keyfile="$(blkid -s PARTUUID -o value $partition).fvek"
+		rm "$keyfile" &>/dev/null
+		cryptsetup bitlkDump --volume-key-file "$keyfile" --dump-volume-key "$partition" <&3
+	done 3<&1
+
+	if ${absent:-false}; then
+		Disconnect "$device" &>/dev/null
+	fi
+}
+
+ListPartitions(){
+	filename="$1"
+	device="$(FindDevice $filename)"
+
+	if [ ! -n "$device" ]; then
+		device="$(TryConnect $filename)"
+		absent=true
+	fi
+
+	if [ ! -n "$device" ]; then
+		return
+	fi
+
+	echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filename is now connected to $device |g" &>/dev/null
+	blkid -s LABEL -s BLOCK_SIZE -s UUID -s TYPE -s PARTUUID "$device"*
+	echo ""
+
+	if ${absent:-false}; then
+		Disconnect "$device" &>/dev/null
+	fi
+}
+
+ConnectAll(){
+	while read -r mapper partuuid volumekey type filename; do
+		device="$(FindDevice $filename)"
+
+		if [ ! -n "$device" ]; then
+			device="$(TryConnect $filename)"
+			absent=true
+		fi
+
+		if [ ! -n "$device" ]; then
+			continue
+		fi
+
+		echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filename is now connected to $device |g"
+
+		while read -r partition; do
+			if [ "BitLocker" = "$(blkid -s TYPE -o value $partition)" ]; then
+				volume="bitlk-${partuuid:9}"
+				cryptsetup close "$volume" &>/dev/null
+				cryptsetup open --type bitlk --volume-key-file "$volumekey" "$partition" "$volume"
+				ntfsfix -d "/dev/mapper/$volume"
+			else
+				ntfsfix -d "$partition"
+			fi
+
+			echo ""
+		done < <(blkid -t "$partuuid" -o device 2>/dev/null) 
+
+		if ${absent:-false}; then
+			rm "/dev/disk/by-id/nbd-$(blkid -s PTUUID -o value $device)" 2>/dev/null
+			ln -s "$device" "/dev/disk/by-id/nbd-$(blkid -s PTUUID -o value $device)"
+		fi
+	done < <(grep -v -e '^#' -e '^[[:space:]]*$' /etc/vhdxtab)
+}
+
+modprobe nbd max_part=255
+self="$(basename $0)"
+if [ -n "$1" ]; then
+	$@
+else
+	echo "Usage: $self <COMMAND> [FILE]
+
+Valid commands are: 
+  DumpVolumeKeys <FILE>      Dumps the volume keys of all BITLK partitions in the disk 
+                             image. This will ask for passwords via the password agent 
+                             logic and the volume keys will be stored in files with the 
+                             name of <PARTUUID>.key
+
+  ListPartitions <FILE>      List partitions in the disk image
+
+  DisconnectAll              Disconnect all devices previously connected by $self.
+
+  GetVhdxMap                 Print a list of connected devices and their attached disk 
+                             images
+
+  ConnectAll                 Connect all disk images mentioned in vhdxtab to NBD devices, 
+                             and if PARTUUID is provided with the entry, open the BITLK 
+                             device with the specified key file
+"
+fi
+

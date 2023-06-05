@@ -1,0 +1,6 @@
+cd "$(dirname $0)"
+cp nbd-vhdx.service /etc/systemd/system
+systemctl daemon-reload
+cp nbd-vhdx /usr/sbin
+systemctl enable --now nbd-vhdx
+systemctl -l --no-pager status nbd-vhdx

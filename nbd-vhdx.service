@@ -1,0 +1,12 @@
+[Unit]
+Description=nbd-vhdx service
+Before=remote-fs-pre.target
+After=local-fs.target 
+
+[Service]
+ExecStop=/usr/sbin/nbd-vhdx DisconnectAll service
+ExecStart=/usr/sbin/nbd-vhdx ConnectAll
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

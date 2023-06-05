@@ -1,0 +1,5 @@
+systemctl disable --now nbd-vhdx
+systemctl -l --no-pager status nbd-vhdx
+rm /etc/systemd/system/nbd-vhdx.service
+systemctl daemon-reload
+rm /usr/sbin/nbd-vhdx

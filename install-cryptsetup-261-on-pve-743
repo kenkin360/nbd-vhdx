@@ -1,0 +1,24 @@
+# extract files
+tar xvf cryptsetup-2.6.1.tar.xz
+
+if ! cd cryptsetup-2.6.1; then
+	exit $?
+fi 
+
+# install prerequisites
+apt install git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar
+
+# ./configure and make install
+./configure
+make clean
+
+if ! make install; then
+	exit $?
+fi 
+
+# fix libcryptsetup.so.12 link
+cp .libs/libcryptsetup.so.12.9.0 /lib/x86_64-linux-gnu
+cd /lib/x86_64-linux-gnu
+mv libcryptsetup.so.12 libcryptsetup.so.12-bak
+ln -s libcryptsetup.so.12.9.0 libcryptsetup.so.12
+ls --color=always -ln /lib/x86_64-linux-gnu/libcryptsetup.so.12*

@@ -48,3 +48,13 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
     UUID=01D98B437CB35EE0 /media/bitlk-test2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
     ```
     where the BitLocker partitions would be mapped in `/dev/mapper`. In the example described formerly, they would be `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01` and `/dev/mapper/bitlk-bace284a-01`. The `UUID`s of BitLocker partitions would be of the mapped ones and not of `/dev/nbdXpY`. The forth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image that `bitlk-test` was in. Note that the preexistent partition where the disk image file lives must be mounted, of course. Option `_netdev` is required for partitions on NBD, otherwise it will hang on boot; you will also need `X-mount.mkdir` if you want to mount them with `mount -a` (in command prompt, sometimes). 
+
+* BitLocker partition in dynamically expanding disk image on an NTFS volume
+
+  You might encounter a problem that after you modified the files in a BitLocker volume under Linux, the disk image cannot be mounted in Windows 10 anyomre. The error message says `Make sure the file is in an NTFS volume and isn't in a compressed folder or volume.` As far as we know by googling, it seems an issue (or a feature?) of Windows security update KB4019472. There are several ways to workaround this but if the disk image was hude, then run
+  
+  ```
+  fsutil sparse setFlag *DiskImage* 0
+  ```
+  in the command prompt would be a reasonable and handy. 
+  

@@ -33,7 +33,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   - - - - /media/bin/bitlk-test.vhd
   - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
   ```
-    The third and fourth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the fourth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
+    The third and fourth entry suggested the same file is actually redundant but what if we sometimes want to pass through the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the fourth entry out. On the other hand, if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choose from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
 
 * /etc/fstab
 
@@ -56,4 +56,3 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   fsutil sparse setFlag <YOUR-DISK-IMAGE-FILENAME> 0
   ```
   in the command prompt would be a reasonable and handy one. 
-  

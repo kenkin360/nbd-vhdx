@@ -3,7 +3,15 @@ nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Bloc
 
 * Prerequisites: 
 
-  To use this tool, you will need the following dependencies: `qemu-nbd` for connecting disk images as NBDs, `cryptsetup` (version 2.6.1) for working with BitLocker partitions, and `blkid`, which plays a crucial role in the script. The remaining commands, such as mount/umount, are typically pre-installed in most Linux distributions.
+  To use this tool, you will need the following dependencies: `qemu-nbd` for connecting disk images as NBDs, `cryptsetup` (version 2.6.1) for working with BitLocker partitions, and `blkid`, which plays a crucial role in the script. The remaining commands, such as mount/umount, are typically pre-installed in most Linux distributions. 
+  
+  To load `nbd` module at boot time, you may create `/etc/modules-load.d/nbd.conf` with the following content: 
+
+  ```
+  nbd
+  options nbd max_part=255
+  ```
+  Or add them to an existing `.conf` under `/etc/modules-load.d`. You might want to change the value of `max_part` which is the number of partitions per device. 
 
 * Installation/Uninstallation: 
 

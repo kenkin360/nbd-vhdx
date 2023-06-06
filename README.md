@@ -19,7 +19,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
 
   1. The first field (namely `target name`) is ignored as the BitLocker partitions will be mapped like `/dev/mapper/bitlk-<uuid>` where `<uuid>` would be the actual partition UUID. No user define name required (and not supported). 
 
-  2. The forth field (namely `options`) is ignored as it takes only `bitlk` type and no extra option is supported. 
+  2. The fourth field (namely `options`) is ignored as it takes only `bitlk` type and no extra option is supported. 
 
   3. If you just want to connect a disk image as an NBD without mapping any BitLocker partition, leave the first four fields with `-`
 
@@ -33,7 +33,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   - - - - /media/bin/bitlk-test.vhd
   - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
   ```
-    The third and forth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the forth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
+    The third and fourth entry suggested the same file are actually redundant but what if we sometimes want to passthrough the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the fourth entry out. On the other hand if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choise from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
 
 * /etc/fstab
 
@@ -47,7 +47,7 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
     UUID=01D98B437A03A830 /media/bitlk-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
     UUID=01D98B437CB35EE0 /media/bitlk-test2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
     ```
-    where the BitLocker partitions would be mapped in `/dev/mapper`. In the example described formerly, they would be `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01` and `/dev/mapper/bitlk-bace284a-01`. The `UUID`s of BitLocker partitions would be of the mapped ones and not of `/dev/nbdXpY`. The forth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image that `bitlk-test` was in. Note that the preexistent partition where the disk image file lives must be mounted, of course. Option `_netdev` is required for partitions on NBD, otherwise it will hang on boot; you will also need `X-mount.mkdir` if you want to mount them with `mount -a` (in command prompt, sometimes). 
+    where the BitLocker partitions would be mapped in `/dev/mapper`. In the example described formerly, they would be `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01` and `/dev/mapper/bitlk-bace284a-01`. The `UUID`s of BitLocker partitions would be of the mapped ones and not of `/dev/nbdXpY`. The fourth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image that `bitlk-test` was in. Note that the pre-existing partition where the disk image file lives must be mounted, of course. Option `_netdev` is required for the partitions on NBD, otherwise it will hang on boot; you will also need `X-mount.mkdir` if you want to mount them with `mount -a` (in command prompt, sometimes). 
 
 * BitLocker partition in dynamically expanding disk image on an NTFS volume
 

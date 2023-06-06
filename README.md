@@ -1,29 +1,29 @@
 # nbx-vhdx
-A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
+nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Block Devices) and handles BitLocker partitions during system startup.
 
 * Prerequisites: 
 
-  This tool utilizes `qemu-nbd` for connecting disk image as NBDs and `cryptsetup`(v2.6.1) for operations on BitLocker partitions, they are required. `blkid` plays an important role in the script, it is also required. The rest commands, for example `mount/umount` are likely pre-installed in all distros. 
+  To use this tool, you will need the following dependencies: `qemu-nbd` for connecting disk images as NBDs, `cryptsetup` (version 2.6.1) for working with BitLocker partitions, and `blkid`, which plays a crucial role in the script. The remaining commands, such as mount/umount, are typically pre-installed in most Linux distributions.
 
-* install/uninstall: 
+* Installation/Uninstallation: 
 
-  Run `install-sh` or `uninstall-sh` along with `nbd-vhdx` and `nbd-vhdx.service` to install/uninstall the service and shell script executable. 
+  To install or uninstall the service and the shell script executable, run the `install-sh` or `uninstall-sh` scripts along with `nbd-vhdx` and `nbd-vhdx.service`.
   
-* Run in command line: 
+* Command Line Usage: 
 
-  Run `nbd-vhdx` with no argument to see the valid commands. 
+  Run `nbd-vhdx` without any arguments to see a list of valid commands.
   
 * /etc/vhdxtab
 
-  The `/etc/vhdxtab` file describes disk images and BitLocker partitions that are set up during system boot. The format was taken from `/etc/crypttab` and an extra field for the filename of disk image was introduced. There are things need to be mentioned: 
+  The `/etc/vhdxtab` file is used to describe disk images and BitLocker partitions that are set up during system boot. The format of this file is based on `/etc/crypttab`, with an additional field introduced for specifying the filename of the disk image. Here are some important points to note:
 
-  1. The first field (namely `target name`) is ignored as the BitLocker partitions will be mapped like `/dev/mapper/bitlk-<uuid>` where `<uuid>` would be the actual partition UUID. No user define name required (and not supported). 
+  1. The first field (`target name`) is ignored as BitLocker partitions will be mapped as `/dev/mapper/bitlk-<uuid>`, where <uuid> represents the actual partition UUID. User-defined names are not required or supported.
 
-  2. The fourth field (namely `options`) is ignored as it takes only `bitlk` type and no extra option is supported. 
+  2. The fourth field (`options`) is ignored, as it only accepts the `bitlk` type and does not support any additional options.
 
-  3. If you just want to connect a disk image as an NBD without mapping any BitLocker partition, leave the first four fields with `-`
+  3. If you only want to connect a disk image as an NBD without mapping any BitLocker partitions, leave the first four fields as "-".
 
-  4. If there are more BitLocker partitions in the same disk image, add each entry with the same filename. That said, the same filename can appear in multiple entries, and will be connected as only one NBD. 
+  4. If there are multiple BitLocker partitions within the same disk image, add each entry with the same filename. This means that the same filename can appear in multiple entries, and it will be connected as a single NBD.
 
   Here's an example: 
   ```
@@ -33,11 +33,11 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
   - - - - /media/bin/bitlk-test.vhd
   - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
   ```
-    The third and fourth entry suggested the same file is actually redundant but what if we sometimes want to pass through the entire device to a vm that `bitlk-test.vhd` is connected to without mapping any BitLocker partition in it? We may just comment the fourth entry out. On the other hand, if there are more non-BitLocker partitions in `bitlk-test.vhd` we want to mount and describe with `/etc/fstab`, we may choose from entry thee - not to map the BitLocker partition -or- entry four - mount them altogether, then we may leave them as is or comment out them on our demand. 
+  The third and fourth entries suggested the same file is redundant. However, if you want to pass the entire device through to a virtual machine connected to `bitlk-test.vhd` without mapping any BitLocker partition within it, you can simply comment out the fourth entry. On the other hand, if you have non-BitLocker partitions in `bitlk-test.vhd` that you want to mount and describe using `/etc/fstab`, you can choose either the third entry (to not map the BitLocker partition) or the fourth entry (to mount them all together). You can leave them as they are or comment them out based on your requirements.
 
 * /etc/fstab
 
-    We would just describe partitions to mount on startup in `/etc/fstab` as usual. The following is for an example: 
+    In the `/etc/fstab` file, you can describe partitions that need to be mounted at startup as usual. Here's an example:
     
     ```
     UUID=xxxxxxxxxxxxxxxx /media/bin ntfs-3g defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
@@ -47,12 +47,12 @@ A systemd service connects vhd/vhdx as NBDs and BitLocker partitions on startup
     UUID=01D98B437A03A830 /media/bitlk-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
     UUID=01D98B437CB35EE0 /media/bitlk-test2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
     ```
-    where the BitLocker partitions would be mapped in `/dev/mapper`. In the example described formerly, they would be `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01` and `/dev/mapper/bitlk-bace284a-01`. The `UUID`s of BitLocker partitions would be of the mapped ones and not of `/dev/nbdXpY`. The fourth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image that `bitlk-test` was in. Note that the pre-existing partition where the disk image file lives must be mounted, of course. Option `_netdev` is required for the partitions on NBD, otherwise it will hang on boot; you will also need `X-mount.mkdir` if you want to mount them with `mount -a` (in command prompt, sometimes). 
+    The BitLocker partitions will be mapped under `/dev/mapper`. In the example mentioned earlier, they would be mapped as `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01`, and `/dev/mapper/bitlk-bace284a-01`. The UUIDs of the BitLocker partitions will be those of the mapped devices and not `/dev/nbdXpY`. The fourth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image mentioned in the `bitlk-test` entry. Note that the pre-existing partition where the disk image file resides must be mounted. Additionally, the `_netdev` option is required for the partitions on NBD; otherwise, the system may hang during boot. If you want to mount them with `mount -a` in the command prompt, you will also need `X-mount.mkdir`.
 
-* BitLocker partition in dynamically expanding disk image on an NTFS volume
+* BitLocker Partition in a Dynamically Expanding Disk Image on an NTFS Volume
+  
+  You may encounter a problem where, after modifying files in a BitLocker volume under Linux, the disk image cannot be mounted in Windows 10 anymore. The error message "Make sure the file is in an NTFS volume and isn't in a compressed folder or volume." may appear. Based on my research, this issue seems to be related to Windows security update KB4019472. There are several workarounds, but if the disk image is large, running the following command in the command prompt would be a reasonable and handy one:
 
-  You might encounter a problem that after you modified the files in a BitLocker volume under Linux, the disk image cannot be mounted in Windows 10 anymore. The error message says `Make sure the file is in an NTFS volume and isn't in a compressed folder or volume.` As far as we know by googling, it seems an issue (or a feature?) of Windows security update KB4019472. There are several ways to workaround this but if the disk image was huge, then run
   ```
   fsutil sparse setFlag <YOUR-DISK-IMAGE-FILENAME> 0
   ```
-  in the command prompt would be a reasonable and handy one. 

@@ -17,7 +17,7 @@ nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Bloc
 
   The `/etc/vhdxtab` file is used to describe disk images and BitLocker partitions that are set up during system boot. The format of this file is based on `/etc/crypttab`, with an additional field introduced for specifying the filename of the disk image. Here are some important points to note:
 
-  1. The first field (`target name`) is ignored as BitLocker partitions will be mapped as `/dev/mapper/bitlk-<uuid>`, where <uuid> represents the actual partition UUID. User-defined names are not required or supported.
+  1. The first field (`target name`) is ignored as BitLocker partitions will be mapped as `/dev/mapper/bitlk-<uuid>`, where <uuid> represents the actual partition UUID. User-defined names are not required and unsupported.
 
   2. The fourth field (`options`) is ignored, as it only accepts the `bitlk` type and does not support any additional options.
 

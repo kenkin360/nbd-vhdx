@@ -6,7 +6,7 @@ if ! cd cryptsetup-2.6.1; then
 fi 
 
 # install prerequisites
-apt install git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar
+apt install asciidoctor git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar
 
 # ./configure and make install
 ./configure

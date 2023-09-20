@@ -1,5 +1,5 @@
 # nbd-vhdx
-nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Block Devices) and handles BitLocker partitions during system startup.
+nbd-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Block Devices) and handles BitLocker partitions during system startup.
 
 * Prerequisites: 
 
@@ -66,5 +66,5 @@ nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Bloc
   ```
 * About Persistent Naming
 
-  nbx-vhdx will create the symbolic link of the connected device in `/dev/disk/by-id/nbd-<PTUUID>`, where `<PTUUID>` is the partition table UUID. 
+  nbd-vhdx will create the symbolic link of the connected device in `/dev/disk/by-id/nbd-<PTUUID>`, where `<PTUUID>` is the partition table UUID. 
   

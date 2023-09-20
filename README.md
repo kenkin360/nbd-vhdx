@@ -1,4 +1,4 @@
-# nbx-vhdx
+# nbd-vhdx
 nbx-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Block Devices) and handles BitLocker partitions during system startup.
 
 * Prerequisites: 

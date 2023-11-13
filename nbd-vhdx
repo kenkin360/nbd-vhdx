@@ -12,15 +12,23 @@ $list"
 				break
 			fi
 
+			target="$(readlink $link)"
+
+			case "$(file -L $target)" in 
+				"/dev/nbd"*)
+					device=$target
+					continue
+					;;
+			esac
+
 			case "$(file -b -L $link)" in 
 				"Microsoft Disk Image"*)
-					filename="$(readlink $link)"
+					filename=$target
 					;;
 
 				"block special"*)
-					device="$(readlink $link)"
+					filename=$target
 					;;
-
 			esac
 		done
 	done < <(ps -C qemu-nbd -o pid=)
@@ -42,13 +50,26 @@ TryConnect(){
 		if [ -f $(echo "$device/partition"|sed 's|/dev/|/sys/class/block/|g') ] || [ -f $(echo "$device/pid"|sed 's|/dev/|/sys/class/block/|g') ]; then
 			# Skip partitions or unavailable
 			continue
-		elif qemu-nbd -c "$device" "$1"; then
-			echo "$device"
-			break
-		else
-			qemu-nbd -d "$device" &>/dev/null
-			break
 		fi
+
+		case "$(file -b -L $(realpath $1))" in 
+			"Microsoft Disk Image"*)
+				if qemu-nbd -c "$device" "$1"; then
+					echo "$device"
+					break
+				fi
+				;;
+
+			"block special"*)
+				if qemu-nbd -f raw -c "$device" "$1"; then
+					echo "$device"
+					break
+				fi
+				;;
+		esac
+
+		qemu-nbd -d "$device" &>/dev/null
+		break
 	done
 }
 
@@ -96,7 +117,7 @@ DumpVolumeKeys(){
 
 	echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filename is now connected to $device |g" &>/dev/null
 
-	blkid -t "TYPE=BitLocker" -o device|while read -r partition; do
+	blkid -t "TYPE=BitLocker" -s PARTUUID "$device"* -o device|while read -r partition; do
 		keyfile="$(blkid -s PARTUUID -o value $partition).fvek"
 		rm "$keyfile" &>/dev/null
 		cryptsetup bitlkDump --volume-key-file "$keyfile" --dump-volume-key "$partition" <&3
@@ -189,4 +210,3 @@ Valid commands are:
                              device with the specified key file
 "
 fi
-

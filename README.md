@@ -36,12 +36,17 @@ nbd-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Bloc
   Here's an example: 
   ```
   # <target name>	<source device>		<key file>	<options>
-  - PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/bin/bitlocker-test.vhdx
-  - PARTUUID=bace267f-01 /root/bace267f-01.fvek bitlk /media/bin/vhdx-test.vhdx
-  - - - - /media/bin/bitlk-test.vhd
-  - PARTUUID=bace284a-01 /root/bace284a-01.fvek bitlk /media/bin/bitlk-test.vhd
+
+  ## Examples of disk image and device alias with partuuid and volume-key unspecified
+  #- - - - /media/ST4000DM001-1ABCD4/games-vhd/391220.vhdx
+  #- - - - /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
+
+  ## Examples of disk image and device alias with partuuid and volume-key specified
+  #- PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/ST4000DM001-1ABCD4/bitlocker-test.vhdx
+  #- PARTUUID=0dabcd78-01 /root/0dabcd78-01.fvek bitlk /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
   ```
-  In this example, the third and fourth entries suggest the same file is in fact redundant. However, if you want to pass the entire device through to a virtual machine connected to `bitlk-test.vhd` without mapping any BitLocker partition within it, you can simply comment out the fourth entry. On the other hand, if you have non-BitLocker partitions in `bitlk-test.vhd` that you want to mount and describe using `/etc/fstab`, you can choose either the third entry (to not map the BitLocker partition) or the fourth entry (to mount them all together). You can leave them as they are or comment them out based on your requirements.
+  
+  For this example, the third and fourth entries suggest the same file is in fact redundant. However, if you want to pass the entire device through to a virtual machine connected to `bitlk-test.vhd` without mapping any BitLocker partition within it, you can simply comment out the fourth entry. On the other hand, if you have non-BitLocker partitions in `bitlk-test.vhd` that you want to mount and describe using `/etc/fstab`, you can choose either the third entry (to not map the BitLocker partition) or the fourth entry (to mount them all together). You can leave them as they are or comment them out based on your requirements.
 
 * /etc/fstab
 

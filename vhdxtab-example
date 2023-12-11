@@ -1,0 +1,10 @@
+# <target name>	<source device>		<key file>	<options>
+
+## Examples of disk image and device alias with partuuid and volume-key unspecified
+#- - - - /media/ST4000DM001-1ABCD4/games-vhd/391220.vhdx
+#- - - - /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
+
+## Examples of disk image and device alias with partuuid and volume-key specified
+#- PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/ST4000DM001-1ABCD4/bitlocker-test.vhdx
+#- PARTUUID=0dabcd78-01 /root/0dabcd78-01.fvek bitlk /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
+

@@ -151,7 +151,8 @@ ListPartitions(){
 }
 
 ConnectAll(){
-	while read -r mapper partuuid volumekey type filename; do
+	while read -r mapper partuuid volumekey type filepath; do
+filename=$(realpath $filepath)
 		device="$(FindDevice $filename)"
 
 		if [ ! -n "$device" ]; then
@@ -163,12 +164,15 @@ ConnectAll(){
 			continue
 		fi
 
-		echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filename is now connected to $device |g"
+		echo -e "$(fdisk -L=always -l "$device")\n"|sed -e "s|Disk $device|$filepath is now connected to $device |g"
 
 		while read -r partition; do
 			if [ "BitLocker" = "$(blkid -s TYPE -o value $partition)" ]; then
 				volume="bitlk-${partuuid:9}"
 				cryptsetup close "$volume" &>/dev/null
+if [ $? -eq 5 ]; then
+	break;
+fi
 				cryptsetup open --type bitlk --volume-key-file "$volumekey" "$partition" "$volume"
 				ntfsfix -d "/dev/mapper/$volume"
 			else

@@ -1,75 +1,95 @@
 # nbd-vhdx
+
 nbd-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Block Devices) and handles BitLocker partitions during system startup.
 
-* Prerequisites: 
+- **Prerequisites**:
 
-  To use this tool, you will need the following dependencies: `qemu-nbd` for connecting disk images as NBDs, `cryptsetup` (version 2.6.1) for working with BitLocker partitions, and `blkid`, which plays a crucial role in the script. The remaining commands, such as mount/umount, are typically pre-installed in most Linux distributions. 
-  
-  To load `nbd` module at boot time, you may create `/etc/modules-load.d/nbd.conf` with the following content: 
+  You'll need to load `nbd` kernel module at boot time. Either pick an existing `.conf` file which is located in `/etc/modules-load.d` or just create a new one such as `/etc/modules-load.d/nbd.conf` and add the following lines:
 
-  ```
-  nbd
-  options nbd max_part=255
-  ```
-  Or add them to an existing `.conf` under `/etc/modules-load.d`. You might want to change the value of `max_part` which is the number of partitions per device. 
+	  nbd
+	  options nbd max_part=255
 
-* Installation/Uninstallation: 
+  `max_part` is the number of partitions per device, it defaults to `0` that causes problems. You may choose a value below 255 depending on your needs.
+
+  To get `nbx-vhdx` to work, you will also need the following dependencies:
+
+  - `qemu-nbd` for connecting disk images as NBDs
+  - `cryptsetup` (version 2.6.1) for dealing with BitLocker partitions
+  - `blkid` which plays a crucial role in my scripts
+
+  For users of Debian-based Linux distros, run the following command to install the necessary packages:
+
+      apt install qemu-utils util-linux
+
+- **Installation/Uninstallation**:
 
   To install or uninstall the service and the shell script executable, run the `install-sh` or `uninstall-sh` scripts along with `nbd-vhdx` and `nbd-vhdx.service`.
-  
-* Command Line Usage: 
+
+- **Command Line Usage**:
 
   Run `nbd-vhdx` without any arguments to see a list of valid commands.
-  
-* /etc/vhdxtab
 
-  The `/etc/vhdxtab` file is used to describe disk images and BitLocker partitions that are set up during system boot. The format of this file is based on `/etc/crypttab`, with an additional field introduced for specifying the filename of the disk image. Here are some important points to note:
+- **/etc/vhdxtab**
 
-  1. The first field (target name) is ignored as BitLocker partitions will be mapped as `/dev/mapper/bitlk-<uuid>`, where `<uuid>` represents the actual partition UUID. User-defined names are not required and unsupported.
+  The file `/etc/vhdxtab` is used for disk image and BitLocker partition configurations that are set up at system boot.
 
-  2. The fourth field (options) is ignored, as it only accepts the `bitlk` type and does not support any additional options.
+  The format of this file is based on `/etc/crypttab`, and an additional field for the filename of the disk image is introduced.
 
-  3. If you only want to connect a disk image as an NBD without mapping any BitLocker partitions, leave the first four fields as "-".
+  Some explanations of the format worth noting include:
 
-  4. If there are multiple BitLocker partitions within the same disk image, add each entry with the same filename. This means that the same filename can appear in multiple entries, and it will be connected as a single NBD.
+  1. The 1st field (target name) is ignored as BitLocker partitions will be mapped like `/dev/mapper/bitlk-<uuid>`, where `<uuid>` represents the actual partition UUID. User-defined names are not required and are unsupported.
 
-  Here's an example: 
+  2. The 4th field (options) is ignored as it accepts only `bitlk` and and no other options.
+
+  3. If all you want is just to connect a vhdx to NBD(without mapping any BitLocker partitions), then leave the first four fields like `- - - -`.
+
+  4. If there are multiple BitLocker partitions within the same disk image, add each entry with the same filename. This means that the same filename can appear in multiple entries, and it will be treated as a single NBD connection.
+
+  Here's an example:
+
   ```
   # <target name>	<source device>		<key file>	<options>
 
-  ## Examples of disk image and device alias with partuuid and volume-key unspecified
-  #- - - - /media/ST4000DM001-1ABCD4/games-vhd/391220.vhdx
-  #- - - - /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
+  # Simply connect vhdx to NBD
+  - - - - /media/ST4000DM001-1ABCD4/games-vhd/391220.vhdx
 
-  ## Examples of disk image and device alias with partuuid and volume-key specified
-  #- PARTUUID=d3eed7e3-01 /root/d3eed7e3-01.fvek bitlk /media/ST4000DM001-1ABCD4/bitlocker-test.vhdx
-  #- PARTUUID=0dabcd78-01 /root/0dabcd78-01.fvek bitlk /dev/disk/by-id/ata-SPCC_Solid_State_Disk_C6380ABCDB6A00ABCD10
+  # Connect a block device to NBD
+  - - - - /dev/disk/by-id/ata-ST5000LM007-1ABCD4_WY2ABCD2
+
+  # Connect BitLocker partition using PARTUUID with a Full Volume Encryption Key
+  - PARTUUID=0dabcd78-01 /root/0dabcd78-01.fvek bitlk /dev/disk/by-id/ata-ST9000LM001-1R8174_WY2ABCD2
   ```
-  
-  For this example, the third and fourth entries suggest the same file is in fact redundant. However, if you want to pass the entire device through to a virtual machine connected to `bitlk-test.vhd` without mapping any BitLocker partition within it, you can simply comment out the fourth entry. On the other hand, if you have non-BitLocker partitions in `bitlk-test.vhd` that you want to mount and describe using `/etc/fstab`, you can choose either the third entry (to not map the BitLocker partition) or the fourth entry (to mount them all together). You can leave them as they are or comment them out based on your requirements.
 
-* /etc/fstab
+  `nbd-vhdx` will try to connect `bitlk` type partitions using `cryptsetup` automatically if FVEK is provided. In that case, the encrypted partition is exposed as unlocked to your system, so that you can use `/etc/fstab` to mount it at system startup.
 
-    In the `/etc/fstab` file, you can describe partitions that need to be mounted at startup as usual. Here's an example:
-    
-    ```
-    UUID=xxxxxxxxxxxxxxxx /media/bin ntfs-3g defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+  You'll be prompted for a password when you try to access a BitLocker partition on the connected NBD if FVEK wasn't provided.
 
-    UUID=01D98685D8342A50 /media/bitlocker-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
-    UUID=01D98B4612C4F6D0 /media/vhdx-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
-    UUID=01D98B437A03A830 /media/bitlk-test ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
-    UUID=01D98B437CB35EE0 /media/bitlk-test2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
-    ```
-    The BitLocker partitions will be mapped under `/dev/mapper`. In the example mentioned earlier, they would be mapped as `/dev/mapper/bitlk-d3eed7e3-01`, `/dev/mapper/bitlk-bace267f-01`, and `/dev/mapper/bitlk-bace284a-01`. The UUIDs of the BitLocker partitions will be those of the mapped devices and not `/dev/nbdXpY`. The fourth entry demonstrates a non-BitLocker partition in `bitlk-test.vhd` which is the same disk image mentioned in the `bitlk-test` entry. Note that the pre-existing partition where the disk image file resides must be mounted. Additionally, the `_netdev` option is required for the partitions on NBD; otherwise, the system may hang during boot. If you want to mount them with `mount -a` in the command prompt, you will also need `X-mount.mkdir`.
+- **/etc/fstab**
 
-* BitLocker Partition in a Dynamically Expanding Disk Image on an NTFS Volume
-  
-  You may encounter a problem where, after modifying files in a BitLocker volume under Linux, the disk image cannot be mounted in Windows 10 anymore. The error message "Make sure the file is in an NTFS volume and isn't in a compressed folder or volume." may appear. Based on my research, this issue seems to be related to Windows security update KB4019472. There are several workarounds, but if the disk image is large, running the following command in the command prompt would be a reasonable and handy one:
+  Use `blkid` to figure out the UUID or PARTUUID after you connect the disk image or block device to NBDs. Partitions on a connected NBD will be shown like `/dev/nbdXpY` in the output of `blkid`, you may add the entries for them to `/etc/fstab` as usual, except the BitLocker encrypted partitions.
+
+  The unlocked BitLocker partitions will be mapped in `/dev/mapper`, for the example shown above, it would look like:
+
+      /dev/mapper/bitlk-0dabcd78-01: LABEL="ST9000LM001-1R8174_WY2ABCD2" BLOCK_SIZE="512" UUID="01ABCDBD29DABCD0" TYPE="ntfs"
+
+  in the output of `blkid`. And you may add the line to `/etc/fstab` to mount it at startup:
+
+      UUID=01ABCDBD29DABCD0 /media/ST9000LM001-1R8174_WY2ABCD2 ntfs-3g _netdev,defaults,nodev,nosuid,locale=zh_TW.UTF-8 0 0
+
+  Note that the partition where the VHDX resides must be mounted before you can connect the disk image. Additionally, the `_netdev` option is required for the partitions on NBD; otherwise, the system may hang during boot. As a side note, if you want to mount them with `mount -a` in the command prompt, you will also need `X-mount.mkdir`.
+
+- **Some technical details**
+
+  - Persistent Naming
+
+    nbd-vhdx will create the symbolic link of the connected device in `/dev/disk/by-id/nbd-<PTUUID>`, where `<PTUUID>` is the partition table UUID.
+
+  - BitLocker volume of a dynamically-expanding VHDX file in NTFS
+
+  You might see the error message "Make sure the file is in an NTFS volume and isn't in a compressed folder or volume." after modifying files of a BitLocker volume on Linux and the vhdx can no longer be mounted on Windows.
+
+  Try the following command to work around this:
 
   ```
   fsutil sparse setFlag <YOUR-DISK-IMAGE-FILENAME> 0
   ```
-* About Persistent Naming
-
-  nbd-vhdx will create the symbolic link of the connected device in `/dev/disk/by-id/nbd-<PTUUID>`, where `<PTUUID>` is the partition table UUID. 
-  

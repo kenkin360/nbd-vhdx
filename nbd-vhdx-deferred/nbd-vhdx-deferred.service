@@ -1,0 +1,12 @@
+[Unit]
+Description=nbd-vhdx-deferred service
+#After=local-fs.target 
+After=nbd-vhdx.service
+
+[Service]
+ExecStop=/usr/sbin/nbd-vhdx-deferred-sh stop
+ExecStart=/usr/sbin/nbd-vhdx-deferred-sh start
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

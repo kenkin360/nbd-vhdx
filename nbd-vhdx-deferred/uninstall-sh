@@ -1,0 +1,5 @@
+systemctl disable --now nbd-vhdx-deferred
+systemctl -l --no-pager status nbd-vhdx-deferred
+rm /etc/systemd/system/nbd-vhdx-deferred.service
+systemctl daemon-reload
+rm /usr/sbin/nbd-vhdx-deferred-sh

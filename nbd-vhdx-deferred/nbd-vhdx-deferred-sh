@@ -1,0 +1,20 @@
+#!/bin/bash
+
+stop() {
+	:
+}
+
+start() {
+	for ((i=3; i-->0; )); do
+		sleep 6
+		nbd-vhdx ConnectAll
+	done		
+}
+
+self="$(basename $0)"
+if [ -n "$1" ]; then
+        $@
+else
+        echo "Usage: $self <COMMAND>
+"
+fi

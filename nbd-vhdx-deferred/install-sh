@@ -1,0 +1,6 @@
+cd "$(dirname $0)"
+cp nbd-vhdx-deferred.service /etc/systemd/system
+systemctl daemon-reload
+cp nbd-vhdx-deferred-sh /usr/sbin
+systemctl enable --now nbd-vhdx-deferred
+systemctl -l --no-pager status nbd-vhdx-deferred

@@ -38,7 +38,7 @@ $list"
 
 FindDevice(){
 	while read -r device filename; do
-		if [ "$filename" = "$1" ]; then
+		if [ "$filename" = "$1" ] || [ "$filename" = "$(realpath $1)" ]; then
 			echo "$device"
 			break
 		fi

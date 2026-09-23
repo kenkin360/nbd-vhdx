@@ -174,9 +174,9 @@ if [ $? -eq 5 ]; then
 	break;
 fi
 				cryptsetup open --type bitlk --volume-key-file "$volumekey" "$partition" "$volume"
-				ntfsfix -d "/dev/mapper/$volume"
+				ntfsck -a "/dev/mapper/$volume"
 			else
-				ntfsfix -d "$partition"
+				ntfsck -a "$partition"
 			fi
 
 			echo ""

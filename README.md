@@ -4,22 +4,46 @@ nbd-vhdx is a systemd service that connects VHD/VHDX files as NBDs (Network Bloc
 
 - **Prerequisites**:
 
-  You'll need to load `nbd` kernel module at boot time. Either pick an existing `.conf` file which is located in `/etc/modules-load.d` or just create a new one such as `/etc/modules-load.d/nbd.conf` and add the following lines:
+  You'll need to load the `nbd` kernel module at boot time. Either pick an existing `.conf` file located in `/etc/modules-load.d` or create a new one such as `/etc/modules-load.d/nbd.conf` and add the following line:
 
 	  nbd
+
+  Module options must be placed in `/etc/modprobe.d`. Create `/etc/modprobe.d/nbd.conf` and add:
+
 	  options nbd max_part=255
 
-  `max_part` is the number of partitions per device, it defaults to `0` that causes problems. You may choose a value below 255 depending on your needs.
+  `max_part` is the number of partitions per device. It defaults to `0`, which causes problems because partition devices such as `/dev/nbd0p1` will not be created. You may choose a value below 255 depending on your needs.
 
-  To get `nbx-vhdx` to work, you will also need the following dependencies:
+  To get `nbd-vhdx` to work, you will also need the following dependencies:
 
-  - `qemu-nbd` for connecting disk images as NBDs
-  - `cryptsetup` (version 2.6.1) for dealing with BitLocker partitions
-  - `blkid` which plays a crucial role in my scripts
+  - `qemu-nbd`, provided by `qemu-utils`, for connecting disk images as NBDs
+  - `cryptsetup`, provided by `cryptsetup-bin`, for dealing with BitLocker partitions
+  - `blkid`, `mount`, and `umount`, provided by `util-linux`
+  - `fdisk`, provided by the `fdisk` package on Debian-based distributions
+  - `file`, provided by the `file` package, for detecting disk image and block-device types
+  - `ps`, provided by `procps`, for locating active `qemu-nbd` processes
+  - `realpath` and `readlink`, provided by `coreutils`
+  - `ntfsck`, provided by `ntfsprogs-plus`, for checking and repairing NTFS volumes before they are mounted or passed through to a virtual machine
 
-  For users of Debian-based Linux distros, run the following command to install the necessary packages:
+  For users of Debian-based Linux distros, run the following command to install the dependencies available from the standard repositories:
 
-      apt install qemu-utils util-linux
+      apt install qemu-utils cryptsetup-bin util-linux fdisk file procps
+
+  `coreutils` is part of a normal Debian installation and usually does not need to be installed separately.
+
+  On Debian releases that provide `ntfsprogs-plus`, install it with:
+
+      apt install ntfsprogs-plus
+
+  Older Debian and Proxmox VE releases may not provide `ntfsprogs-plus` in their configured repositories. In that case, build and install it from its upstream source repository. The resulting `ntfsck` executable is normally installed as:
+
+      /usr/local/sbin/ntfsck
+
+  If `/etc/fstab` uses a non-zero filesystem-check pass number for NTFS volumes, also provide the standard fsck helper name:
+
+      ln -sf /usr/local/sbin/ntfsck /sbin/fsck.ntfs
+
+  `ntfsprogs-plus` is independent of `ntfs-3g`. The FUSE-based `ntfs-3g` driver is not required when the in-kernel `ntfs` driver is used.
 
 - **Installation/Uninstallation**:
 
